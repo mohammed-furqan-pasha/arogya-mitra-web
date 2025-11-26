@@ -1,6 +1,6 @@
 // Arogya Mitra Web Frontend Logic (Decoupled)
 
-const API_URL = "http://127.0.0.1:8000/api/chat";
+const API_URL = "https://arogya-mitra-web.onrender.com/api/chat";
 const STORAGE_USER_ID_KEY = "arogya_mitra_user_id";
 
 // --- User identity helpers ---
