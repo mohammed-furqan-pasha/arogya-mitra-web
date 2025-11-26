@@ -2,17 +2,13 @@ import os
 import sys
 import pytest
 from dotenv import load_dotenv
-
+from services.database_service import DatabaseService
 # Ensure project root is on sys.path so 'services' and other modules can be imported
+# Load environment variables from .env file for testing
+load_dotenv()
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
-
-from services.database_service import DatabaseService
-
-# Load environment variables from .env file for testing
-load_dotenv()
-
 # Condition to skip the test if Supabase credentials are not found in the environment
 # This is useful for running tests in a CI/CD environment without real credentials
 skip_if_no_creds = pytest.mark.skipif(
