@@ -2,18 +2,14 @@ import os
 import sys
 import pytest
 from dotenv import load_dotenv
-
+from services.gemini_service import GeminiService
+from models.schemas import User
+# Load environment variables from .env file for testing
+load_dotenv()
 # Ensure project root is on sys.path so 'services' and 'models' can be imported
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
-
-from services.gemini_service import GeminiService
-from models.schemas import User
-
-# Load environment variables from .env file for testing
-load_dotenv()
-
 # Condition to skip the test if the Gemini API key is not set in the environment
 skip_if_no_key = pytest.mark.skipif(
     not os.getenv("GEMINI_API_KEY"),
