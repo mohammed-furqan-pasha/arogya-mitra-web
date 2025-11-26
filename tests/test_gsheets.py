@@ -1,6 +1,12 @@
 import os
+import sys
 import pytest
 from dotenv import load_dotenv
+
+# Ensure project root is on sys.path so 'services' can be imported
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 # This import now works correctly because of pyproject.toml
 from services.gsheets_service import GSheetsService

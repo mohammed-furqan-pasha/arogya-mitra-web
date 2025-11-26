@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Arogya Mitra – AI Health Assistant (Web)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+      /* Scrollbar styling for chat window */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #e5e7eb;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #0f766e;
+        border-radius: 9999px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-900">
+    <div class="min-h-screen flex items-center justify-center px-4 py-6">
+      <div
+        class="w-full max-w-5xl bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden border border-slate-200"
+      >
+        <!-- Header -->
+        <header
+          class="flex items-center justify-between px-6 py-4 bg-teal-800 text-white"
+        >
+          <div class="flex items-center gap-3">
+            <!-- Simple medical-style logo/icon -->
+            <div
+              class="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center shadow-sm"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5 text-teal-50"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2z"
+                />
+                <path d="M12 8v8" />
+                <path d="M8 12h8" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
+                Arogya Mitra
+              </h1>
+              <p class="text-[11px] sm:text-xs text-teal-100">
+                AI Health Assistant – Public Health Support
+              </p>
+            </div>
+          </div>
+          <div class="text-[11px] sm:text-xs text-teal-100 hidden sm:block">
+            Backend API:
+            <span class="font-mono">http://127.0.0.1:8000/api/chat</span>
+          </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="flex flex-col h-[70vh] sm:h-[75vh]">
+          <!-- Chat window -->
+          <section
+            id="chat-window"
+            class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 bg-slate-50"
+            aria-label="Chat messages"
+          >
+            <!-- Initial bot message -->
+            <div class="flex items-start gap-3 max-w-xl">
+              <div
+                class="flex-shrink-0 w-8 h-8 rounded-full bg-teal-700 flex items-center justify-center text-xs font-semibold text-white"
+              >
+                AM
+              </div>
+              <div
+                class="rounded-2xl rounded-tl-sm bg-white border border-slate-200 px-4 py-3 shadow-sm"
+              >
+                <p class="text-sm text-slate-800">
+                  Namaskar! I am
+                  <span class="font-semibold">Arogya Mitra</span>, your AI health
+                  assistant. You can ask me about symptoms, prevention, vaccines,
+                  and general health advice.
+                </p>
+                <p class="text-[11px] text-slate-500 mt-2">
+                  This service is for general information only and does not
+                  replace a doctor. In emergencies, please call
+                  <span class="font-semibold text-slate-600">108</span>.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Input area -->
+          <section
+            class="border-t border-slate-200 bg-white px-4 sm:px-6 py-3 flex flex-col gap-2"
+          >
+            <form id="chat-form" class="flex items-end gap-2">
+              <div class="flex-1 flex flex-col gap-1">
+                <label for="message-input" class="sr-only">Type your message</label>
+                <textarea
+                  id="message-input"
+                  rows="1"
+                  class="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-teal-600"
+                  placeholder="Ask about symptoms, prevention, or healthy habits…"
+                ></textarea>
+                <p class="text-[10px] text-slate-400">
+                  Arogya Mitra cannot provide emergency care. For urgent issues,
+                  contact local health services or dial
+                  <span class="font-semibold text-slate-600">108</span>.
+                </p>
+              </div>
+              <button
+                type="submit"
+                id="send-button"
+                class="inline-flex items-center justify-center rounded-full bg-teal-700 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-70"
+              >
+                Send
+              </button>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- App logic -->
+    <script src="script.js" defer></script>
+  </body>
+</html>

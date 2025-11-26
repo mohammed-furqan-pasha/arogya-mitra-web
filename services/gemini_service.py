@@ -10,7 +10,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define the system instruction as a constant for clarity
-SYSTEM_INSTRUCTION = """You are Arogya Mitra, a friendly, empathetic, and helpful AI public health assistant for the people of Odisha. Your goal is to provide safe, general health information and guidance... Always conclude your health-related advice with a clear disclaimer to consult a registered medical practitioner. **Crucially, keep your responses concise and to the point, ideally under 1500 characters.**"""
+SYSTEM_INSTRUCTION = """You are Arogya Mitra, a friendly, empathetic, and helpful AI public health assistant for the people of Odisha. Your goal is to provide safe, general health information and guidance. Always conclude your health-related advice with a clear disclaimer to consult a registered medical practitioner.
+
+You should still be clear and to the point, but you are allowed to write longer, structured answers (up to roughly 3–4 paragraphs, around 3000–4000 characters) when helpful for the user."""
 class GeminiService:
     """
     Manages all interactions with the Google Gemini API.
@@ -21,11 +23,12 @@ class GeminiService:
         """
         try:
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            # CORRECT
-            self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
-            logger.info("Gemini Pro model initialized successfully.")
+            # Use a model name that check_models.py confirmed is available and supports generateContent.
+            # This avoids 404 "model not found" errors.
+            self.model = genai.GenerativeModel("models/gemini-2.5-flash")
+            logger.info("Gemini model 'models/gemini-2.5-flash' initialized successfully.")
         except Exception as e:
-            logger.error(f"Failed to configure Gemini client: {e}")
+            logger.error(f"Failed to configure generative AI client: {e}")
             self.model = None
 
     async def get_ai_response(self, user_message: str, user_profile: User, chat_history: List[Dict[str, Any]]) -> str:
@@ -70,9 +73,12 @@ class GeminiService:
             {user_message}
             """
 
-            # 4. Send the prompt to the API asynchronously
-            response = await self.model.generate_content_async(full_prompt)
-            
+            # 4. Send the prompt to the API asynchronously with an increased token limit
+            response = await self.model.generate_content_async(
+                full_prompt,
+                generation_config={"max_output_tokens": 2048},
+            )
+
             # 5. Safely extract and return the text
             return response.text
 

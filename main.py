@@ -1,115 +1,136 @@
 import logging
-from fastapi import FastAPI, Form, BackgroundTasks, Response
+from typing import Optional, Dict, Any, List
 
-# Import your data models (schemas) and service classes
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
 from models.schemas import User, ChatMessage
 from services.database_service import DatabaseService
-from services.gsheets_service import GSheetsService
 from services.gemini_service import GeminiService
-from services.notification_service import NotificationService
 
-# --- Global Setup ---
-# Configure logging
+# --- Logging setup ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Instantiate the FastAPI app
-app = FastAPI(title="Arogya Mitra AI Assistant")
+# --- FastAPI app ---
+app = FastAPI(title="Arogya Mitra API")
 
-# Instantiate all service classes at the global level
+# --- CORS (allow all origins so the standalone frontend can call this API) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],       # later you can restrict this
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Services ---
 db_service = DatabaseService()
-gsheets_service = GSheetsService()
 gemini_service = GeminiService()
-notification_service = NotificationService()
 
-# Define critical keywords for immediate safety response
+# --- Safety configuration ---
 CRITICAL_KEYWORDS = [
-    'suicide', 'kill myself', 'want to die', 'heart attack', 'chest pain',
-    'can\'t breathe', 'unconscious', 'poison', 'accident', 'bleeding heavily'
+    "suicide",
+    "kill myself",
+    "want to die",
+    "heart attack",
+    "chest pain",
+    "can't breathe",
+    "unconscious",
+    "poison",
+    "accident",
+    "bleeding heavily",
 ]
-CRITICAL_RESPONSE_MESSAGE = "This seems like a critical situation. Please contact emergency services immediately by calling 108. This is an AI assistant and not a substitute for a medical professional."
-# --- End Global Setup ---
+
+CRITICAL_RESPONSE_MESSAGE = (
+    "This seems like a critical situation. Please contact emergency services "
+    "immediately by calling 108. This is an AI assistant and not a substitute "
+    "for a medical professional."
+)
+
+# --- Pydantic models ---
 
 
-# --- Background Task Logic ---
-async def process_message_logic(user_phone: str, user_message: str):
-    """
-    This function contains the core logic for handling a non-critical message.
-    It runs in the background to avoid timing out the Twilio webhook.
-    """
-    try:
-        # a. Fetch User Profile
-        user_profile_data = await db_service.get_user(user_phone)
-
-        # b. Handle New Users
-        if user_profile_data:
-            user_profile = User(**user_profile_data)
-        else:
-            # Create a default profile for the new user
-            user_profile = User(phone_number=user_phone)
-            # You might want to save this new user profile to the DB immediately
-            await db_service.create_or_update_user(user_profile)
-            logger.info(f"Created new user profile for {user_phone}")
-
-        # c. Fetch Chat History
-        history = await db_service.get_chat_history(user_phone)
-
-        # d. Call AI Service
-        ai_response_text = await gemini_service.get_ai_response(
-            user_message=user_message,
-            user_profile=user_profile,
-            chat_history=history
-        )
-
-        # e. Save Conversation to DB
-        # Save user's message
-        await db_service.save_chat_message(
-            ChatMessage(phone_number=user_phone, sender='user', message_text=user_message)
-        )
-        # Save bot's response
-        await db_service.save_chat_message(
-            ChatMessage(phone_number=user_phone, sender='bot', message_text=ai_response_text)
-        )
-
-        # f. Send AI Reply back to the user
-        await notification_service.send_sms(to_number=user_phone, message_body=ai_response_text)
-
-    except Exception as e:
-        logger.error(f"Error processing message for {user_phone}: {e}")
-# --- End Background Task Logic ---
+class ChatRequest(BaseModel):
+    user_id: str
+    message: str
 
 
-# --- API Endpoints ---
-@app.get("/", tags=["Status"])
+class ChatResponse(BaseModel):
+    response: str
+
+
+# --- Helpers ---
+
+
+async def get_or_create_user(user_id: str) -> User:
+    """Use user_id as the stable identifier, mapped to the existing phone_number field."""
+    existing: Optional[Dict[str, Any]] = await db_service.get_user(user_id)
+    if existing:
+        return User(**existing)
+
+    user = User(phone_number=user_id)
+    await db_service.create_or_update_user(user)
+    logger.info(f"Created new user profile for user_id={user_id}")
+    return user
+
+
+# --- API endpoints ---
+
+
+@app.get("/")
 async def root():
-    """Root endpoint to check if the service is running."""
-    return {"status": "Arogya Mitra is running"}
+    """Simple status endpoint for the API."""
+    return {"status": "Arogya Mitra API is running"}
 
-@app.post("/api/message", tags=["Webhook"])
-async def handle_message(
-    background_tasks: BackgroundTasks,
-    From: str = Form(...),
-    Body: str = Form(...)
-):
-    """
-    Main webhook endpoint to receive incoming SMS messages from Twilio.
-    """
-    user_phone = From
-    user_message = Body.strip()
-    logger.info(f"Received message from {user_phone}: '{user_message}'")
 
-    # Critical Keyword Check (Safety First)
-    if any(keyword in user_message.lower() for keyword in CRITICAL_KEYWORDS):
-        logger.warning(f"Critical keyword detected from {user_phone}. Sending immediate response.")
-        background_tasks.add_task(
-            notification_service.send_sms,
-            to_number=user_phone,
-            message_body=CRITICAL_RESPONSE_MESSAGE
-        )
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(payload: ChatRequest):
+    """Main chat endpoint for the decoupled frontend.
+
+    Expects JSON:
+      { "user_id": "...", "message": "..." }
+
+    Returns:
+      { "response": "AI response here" }
+    """
+    user_id = payload.user_id.strip()
+    message = payload.message.strip()
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required.")
+    if not message:
+        raise HTTPException(status_code=400, detail="message cannot be empty.")
+
+    logger.info(f"Chat message from user_id={user_id}: '{message}'")
+
+    # Safety: critical keyword check
+    if any(k in message.lower() for k in CRITICAL_KEYWORDS):
+        ai_response_text = CRITICAL_RESPONSE_MESSAGE
     else:
-        # Process Normal Message in the background
-        background_tasks.add_task(process_message_logic, user_phone, user_message)
-    
-    # Return an empty response to Twilio immediately to prevent timeouts
-    return Response(status_code=204)
-# --- End API Endpoints ---
+        # Fetch or create user profile
+        user_profile = await get_or_create_user(user_id)
+
+        # Get recent chat history for context
+        history: List[Dict[str, Any]] = await db_service.get_chat_history(user_id)
+
+        # Ask Gemini
+        ai_response_text = await gemini_service.get_ai_response(
+            user_message=message,
+            user_profile=user_profile,
+            chat_history=history,
+        )
+
+    # Persist conversation (best-effort)
+    try:
+        await db_service.save_chat_message(
+            ChatMessage(phone_number=user_id, sender="user", message_text=message)
+        )
+        await db_service.save_chat_message(
+            ChatMessage(phone_number=user_id, sender="bot", message_text=ai_response_text)
+        )
+    except Exception as e:
+        logger.error(f"Error saving chat messages for user_id={user_id}: {e}")
+
+    return ChatResponse(response=ai_response_text)

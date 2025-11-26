@@ -1,6 +1,13 @@
 import os
+import sys
 import pytest
 from dotenv import load_dotenv
+
+# Ensure project root is on sys.path so 'services' and other modules can be imported
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 from services.database_service import DatabaseService
 
 # Load environment variables from .env file for testing

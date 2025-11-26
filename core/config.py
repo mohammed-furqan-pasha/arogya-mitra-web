@@ -16,8 +16,12 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str
     TWILIO_PHONE_NUMBER: str
     TWILIO_WHATSAPP_NUMBER: str
+    TRACCAR_API_URL: str
+    TRACCAR_PASSWORD: str
+    SMSSYNC_SECRET_KEY: str
+    BASE_URL: str
 
-    # Google Cloud Service Account (for Google Sheets)
+    # Google Cloud Service Account (for Google Sheets)SMSSYNC_SECRET_KEY: str
     # This should be the JSON content as a string
     GOOGLE_APPLICATION_CREDENTIALS_JSON: str
 
