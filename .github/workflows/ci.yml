@@ -20,6 +20,10 @@ jobs:
       TWILIO_PHONE_NUMBER: ${{ secrets.TWILIO_PHONE_NUMBER }}
       TWILIO_WHATSAPP_NUMBER: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
       GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+      TRACCAR_API_URL: ${{ secrets.TRACCAR_API_URL }}
+      TRACCAR_PASSWORD: ${{ secrets.TRACCAR_PASSWORD }}
+      SMSSYNC_SECRET_KEY: ${{ secrets.SMSSYNC_SECRET_KEY }}
+      BASE_URL: ${{ secrets.BASE_URL }}
 
     steps:
       - name: Checkout Repository
